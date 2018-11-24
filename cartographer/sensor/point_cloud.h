@@ -20,41 +20,47 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "Eigen/Geometry"
 #include "cartographer/sensor/proto/sensor.pb.h"
+#include "cartographer/sensor/rangefinder_point.h"
 #include "cartographer/transform/rigid_transform.h"
 #include "glog/logging.h"
 
 namespace cartographer {
 namespace sensor {
 
-typedef std::vector<Eigen::Vector3f> PointCloud;
-typedef std::vector<Eigen::Vector2f> PointCloud2D;
+// Stores 3D positions of points.
+// For 2D points, the third entry is 0.f.
+using PointCloud = std::vector<RangefinderPoint>;
+
+// Stores 3D positions of points with their relative measurement time in the
+// fourth entry. Time is in seconds, increasing and relative to the moment when
+// the last point was acquired. So, the fourth entry for the last point is 0.f.
+// If timing is not available, all fourth entries are 0.f. For 2D points, the
+// third entry is 0.f (and the fourth entry is time).
+using TimedPointCloud = std::vector<TimedRangefinderPoint>;
+
+struct PointCloudWithIntensities {
+  TimedPointCloud points;
+  std::vector<float> intensities;
+};
 
 // Transforms 'point_cloud' according to 'transform'.
 PointCloud TransformPointCloud(const PointCloud& point_cloud,
                                const transform::Rigid3f& transform);
 
-// Transforms 'point_cloud_2d' according to 'transform'.
-PointCloud2D TransformPointCloud2D(const PointCloud2D& point_cloud_2d,
-                                   const transform::Rigid2f& transform);
+// Transforms 'point_cloud' according to 'transform'.
+TimedPointCloud TransformTimedPointCloud(const TimedPointCloud& point_cloud,
+                                         const transform::Rigid3f& transform);
 
-// Converts 'point_cloud_2d' to a 3D point cloud.
-PointCloud ToPointCloud(const PointCloud2D& point_cloud_2d);
+// Returns a new point cloud without points that fall outside the region defined
+// by 'min_z' and 'max_z'.
+PointCloud CropPointCloud(const PointCloud& point_cloud, float min_z,
+                          float max_z);
 
-// Converts 'point_cloud' to a 2D point cloud by removing the z component.
-PointCloud2D ProjectToPointCloud2D(const PointCloud& point_cloud);
-
-// Returns a new point cloud without points that fall outside the axis-aligned
-// cuboid defined by 'min' and 'max'.
-PointCloud Crop(const PointCloud& point_cloud, const Eigen::Vector3f& min,
-                const Eigen::Vector3f& max);
-
-// Converts 'point_cloud' to a proto::PointCloud.
-proto::PointCloud ToProto(const PointCloud& point_cloud);
-
-// Converts 'proto' to a PointCloud.
-PointCloud ToPointCloud(const proto::PointCloud& proto);
+// Returns a new point cloud without points that fall outside the region defined
+// by 'min_z' and 'max_z'.
+TimedPointCloud CropTimedPointCloud(const TimedPointCloud& point_cloud,
+                                    float min_z, float max_z);
 
 }  // namespace sensor
 }  // namespace cartographer

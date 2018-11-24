@@ -20,8 +20,8 @@
 #include <memory>
 #include <string>
 
+#include "absl/memory/memory.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
-#include "cartographer/common/make_unique.h"
 #include "cartographer/common/port.h"
 #include "glog/logging.h"
 
@@ -37,19 +37,19 @@ class DummyFileResolver : public FileResolver {
 
   ~DummyFileResolver() override {}
 
-  string GetFileContentOrDie(const string& unused_basename) override {
+  std::string GetFileContentOrDie(const std::string& unused_basename) override {
     LOG(FATAL) << "Not implemented";
   }
 
-  string GetFullPathOrDie(const string& unused_basename) override {
+  std::string GetFullPathOrDie(const std::string& unused_basename) override {
     LOG(FATAL) << "Not implemented";
   }
 };
 
-std::unique_ptr<LuaParameterDictionary> MakeDictionary(const string& code) {
-  return common::make_unique<LuaParameterDictionary>(
-      code, std::unique_ptr<DummyFileResolver>(new DummyFileResolver()),
-      nullptr /* state_extension_function */);
+std::unique_ptr<LuaParameterDictionary> MakeDictionary(
+    const std::string& code) {
+  return absl::make_unique<LuaParameterDictionary>(
+      code, absl::make_unique<DummyFileResolver>());
 }
 
 }  // namespace common

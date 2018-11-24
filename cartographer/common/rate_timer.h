@@ -62,9 +62,8 @@ class RateTimer {
       return 0.;
     }
     return common::ToSeconds((events_.back().time - events_.front().time)) /
-           std::chrono::duration_cast<std::chrono::duration<double>>(
-               events_.back().wall_time - events_.front().wall_time)
-               .count();
+           common::ToSeconds(events_.back().wall_time -
+                             events_.front().wall_time);
   }
 
   // Records an event that will contribute to the computed rate.
@@ -78,7 +77,7 @@ class RateTimer {
   }
 
   // Returns a debug string representation.
-  string DebugString() const {
+  std::string DebugString() const {
     if (events_.size() < 2) {
       return "unknown";
     }
@@ -109,7 +108,7 @@ class RateTimer {
   }
 
   // Returns the average and standard deviation of the deltas.
-  string DeltasDebugString() const {
+  std::string DeltasDebugString() const {
     const auto deltas = ComputeDeltasInSeconds();
     const double sum = std::accumulate(deltas.begin(), deltas.end(), 0.);
     const double mean = sum / deltas.size();

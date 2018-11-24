@@ -22,79 +22,46 @@
 namespace cartographer {
 namespace sensor {
 
-namespace {
-
-template <typename PointCloudType, typename TransformType>
-PointCloudType Transform(const PointCloudType& point_cloud,
-                         const TransformType& transform) {
-  PointCloudType result;
+PointCloud TransformPointCloud(const PointCloud& point_cloud,
+                               const transform::Rigid3f& transform) {
+  PointCloud result;
   result.reserve(point_cloud.size());
-  for (const auto& point : point_cloud) {
+  for (const RangefinderPoint& point : point_cloud) {
     result.emplace_back(transform * point);
   }
   return result;
 }
 
-}  // namespace
-
-PointCloud TransformPointCloud(const PointCloud& point_cloud,
-                               const transform::Rigid3f& transform) {
-  return Transform(point_cloud, transform);
-}
-
-PointCloud2D TransformPointCloud2D(const PointCloud2D& point_cloud_2d,
-                                   const transform::Rigid2f& transform) {
-  return Transform(point_cloud_2d, transform);
-}
-
-PointCloud ToPointCloud(const PointCloud2D& point_cloud_2d) {
-  sensor::PointCloud point_cloud;
-  point_cloud.reserve(point_cloud_2d.size());
-  for (const auto& point : point_cloud_2d) {
-    point_cloud.emplace_back(point.x(), point.y(), 0.f);
+TimedPointCloud TransformTimedPointCloud(const TimedPointCloud& point_cloud,
+                                         const transform::Rigid3f& transform) {
+  TimedPointCloud result;
+  result.reserve(point_cloud.size());
+  for (const TimedRangefinderPoint& point : point_cloud) {
+    result.push_back(transform * point);
   }
-  return point_cloud;
+  return result;
 }
 
-PointCloud2D ProjectToPointCloud2D(const PointCloud& point_cloud) {
-  sensor::PointCloud2D point_cloud_2d;
-  point_cloud_2d.reserve(point_cloud.size());
-  for (const auto& point : point_cloud) {
-    point_cloud_2d.emplace_back(point.x(), point.y());
-  }
-  return point_cloud_2d;
-}
-
-PointCloud Crop(const PointCloud& point_cloud, const Eigen::Vector3f& min,
-                const Eigen::Vector3f& max) {
+PointCloud CropPointCloud(const PointCloud& point_cloud, const float min_z,
+                          const float max_z) {
   PointCloud cropped_point_cloud;
-  for (const auto& point : point_cloud) {
-    if (min.x() <= point.x() && point.x() <= max.x() && min.y() <= point.y() &&
-        point.y() <= max.y() && min.z() <= point.z() && point.z() <= max.z()) {
+  for (const RangefinderPoint& point : point_cloud) {
+    if (min_z <= point.position.z() && point.position.z() <= max_z) {
       cropped_point_cloud.push_back(point);
     }
   }
   return cropped_point_cloud;
 }
 
-proto::PointCloud ToProto(const PointCloud& point_cloud) {
-  proto::PointCloud proto;
-  for (const auto& point : point_cloud) {
-    proto.add_x(point.x());
-    proto.add_y(point.y());
-    proto.add_z(point.z());
+TimedPointCloud CropTimedPointCloud(const TimedPointCloud& point_cloud,
+                                    const float min_z, const float max_z) {
+  TimedPointCloud cropped_point_cloud;
+  for (const TimedRangefinderPoint& point : point_cloud) {
+    if (min_z <= point.position.z() && point.position.z() <= max_z) {
+      cropped_point_cloud.push_back(point);
+    }
   }
-  return proto;
-}
-
-PointCloud ToPointCloud(const proto::PointCloud& proto) {
-  PointCloud point_cloud;
-  const int size = std::min({proto.x_size(), proto.y_size(), proto.z_size()});
-  point_cloud.reserve(size);
-  for (int i = 0; i != size; ++i) {
-    point_cloud.emplace_back(proto.x(i), proto.y(i), proto.z(i));
-  }
-  return point_cloud;
+  return cropped_point_cloud;
 }
 
 }  // namespace sensor

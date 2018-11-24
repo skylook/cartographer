@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto2";
+syntax = "proto3";
 
 package cartographer.sensor.proto;
 
@@ -20,74 +20,65 @@ option java_outer_classname = "Sensor";
 
 import "cartographer/transform/proto/transform.proto";
 
-// Collection of 3D 'points'.
-message PointCloud {
-  // Points as repeated floats for efficiency. All fields have the same size.
-  repeated float x = 3 [packed = true];
-  repeated float y = 4 [packed = true];
-  repeated float z = 5 [packed = true];
+message RangefinderPoint {
+  transform.proto.Vector3f position = 1;
 }
 
-// Compressed variant of PointCloud.
+message TimedRangefinderPoint {
+  transform.proto.Vector3f position = 1;
+  float time = 2;
+}
+
+// Compressed collection of a 3D point cloud.
 message CompressedPointCloud {
-  optional int32 num_points = 1;
-  repeated int32 point_data = 3 [packed = true];
+  int32 num_points = 1;
+  repeated int32 point_data = 3;
 }
 
-// Linearized matrix representation in row major format.
-// E.g. the  2x3 matrix:
-//   | 1, 2, 3 |
-//   | 4, 5, 6 |
-// would be represented as
-// {
-//   rows: 2;
-//   cols: 2;
-//   data: [1, 2, 3, 4, 5, 6]
-// }
-message Matrix {
-  optional int32 rows = 1;
-  optional int32 cols = 2;
-  repeated double data = 3;
+// Proto representation of ::cartographer::sensor::TimedPointCloudData.
+message TimedPointCloudData {
+  int64 timestamp = 1;
+  transform.proto.Vector3f origin = 2;
+  repeated transform.proto.Vector4f point_data_legacy = 3;
+  repeated TimedRangefinderPoint point_data = 4;
 }
 
-// Modeled after ROS's MultiEchoLaserScan message.
-// http://docs.ros.org/api/sensor_msgs/html/msg/MultiEchoLaserScan.html
-message LaserScan {
-  message Values {
-    repeated float value = 1 [packed = true];
+// Proto representation of ::cartographer::sensor::RangeData.
+message RangeData {
+  transform.proto.Vector3f origin = 1;
+  repeated transform.proto.Vector3f returns_legacy = 2;
+  repeated transform.proto.Vector3f misses_legacy = 3;
+  repeated RangefinderPoint returns = 4;
+  repeated RangefinderPoint misses = 5;
+}
+
+// Proto representation of ::cartographer::sensor::ImuData.
+message ImuData {
+  int64 timestamp = 1;
+  transform.proto.Vector3d linear_acceleration = 2;
+  transform.proto.Vector3d angular_velocity = 3;
+}
+
+// Proto representation of ::cartographer::sensor::OdometryData.
+message OdometryData {
+  int64 timestamp = 1;
+  transform.proto.Rigid3d pose = 2;
+}
+
+// Proto representation of ::cartographer::sensor::FixedFramePoseData.
+message FixedFramePoseData {
+  int64 timestamp = 1;
+  transform.proto.Rigid3d pose = 2;
+}
+
+// Proto representation of ::cartographer::sensor::LandmarkData.
+message LandmarkData {
+  message LandmarkObservation {
+    bytes id = 1;
+    transform.proto.Rigid3d landmark_to_tracking_transform = 2;
+    double translation_weight = 3;
+    double rotation_weight = 4;
   }
-
-  optional float angle_min = 2;
-  optional float angle_max = 3;
-  optional float angle_increment = 4;
-  optional float time_increment = 5;
-  optional float scan_time = 6;
-  optional float range_min = 7;
-  optional float range_max = 8;
-
-  repeated Values range = 9;
-  repeated Values intensity = 10;
-}
-
-// Proto representation of ::cartographer::sensor::LaserFan3D
-message LaserFan3D {
-  optional transform.proto.Vector3f origin = 1;
-  optional PointCloud point_cloud = 2;
-  optional PointCloud missing_echo_point_cloud = 3;
-
-  // Reflectivity values of point_cloud or empty.
-  repeated int32 reflectivity = 4 [packed = true];
-}
-
-// IMU measurement.
-message Imu {
-  optional transform.proto.Quaterniond orientation = 2;
-  optional transform.proto.Vector3d angular_velocity = 3;
-  optional transform.proto.Vector3d linear_acceleration = 4;
-  optional transform.proto.Vector3d magnetic_field = 5;
-  optional float ambient_pressure = 6;
-  // Rotation in radians in the sensor frame since the previous measurement.
-  optional transform.proto.Vector3d delta_rotation = 7;
-  // Change in velocity in the sensor frame since the previous measurement.
-  optional transform.proto.Vector3d delta_velocity = 8;
+  int64 timestamp = 1;
+  repeated LandmarkObservation landmark_observations = 2;
 }

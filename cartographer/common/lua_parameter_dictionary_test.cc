@@ -20,8 +20,8 @@
 #include <cmath>
 #include <memory>
 
+#include "absl/memory/memory.h"
 #include "cartographer/common/lua_parameter_dictionary_test_helpers.h"
-#include "cartographer/common/make_unique.h"
 #include "gtest/gtest.h"
 
 namespace cartographer {
@@ -29,23 +29,15 @@ namespace common {
 namespace {
 
 std::unique_ptr<LuaParameterDictionary> MakeNonReferenceCounted(
-    const string& code) {
+    const std::string& code) {
   return LuaParameterDictionary::NonReferenceCounted(
-      code, common::make_unique<DummyFileResolver>(),
-      nullptr /* state_extension_function */);
-}
-
-std::unique_ptr<LuaParameterDictionary> MakePartial(const string& code,
-                                                    const string& key) {
-  return LuaParameterDictionary::Partial(
-      code, key, common::make_unique<DummyFileResolver>(),
-      nullptr /* state_extension_function */);
+      code, absl::make_unique<DummyFileResolver>());
 }
 
 class LuaParameterDictionaryTest : public ::testing::Test {
  protected:
   void ReferenceAllKeysAsIntegers(LuaParameterDictionary* dict) {
-    for (const string& key : dict->GetKeys()) {
+    for (const std::string& key : dict->GetKeys()) {
       dict->GetInt(key);
     }
   }
@@ -81,7 +73,7 @@ TEST_F(LuaParameterDictionaryTest, GetDictionary) {
       MakeDictionary("return { blah = { blue = 100, red = 200 }, fasel = 10 }");
 
   std::unique_ptr<LuaParameterDictionary> sub_dict(dict->GetDictionary("blah"));
-  std::vector<string> keys = sub_dict->GetKeys();
+  std::vector<std::string> keys = sub_dict->GetKeys();
   ASSERT_EQ(keys.size(), 2);
   std::sort(keys.begin(), keys.end());
   ASSERT_EQ(keys[0], "blue");
@@ -97,7 +89,7 @@ TEST_F(LuaParameterDictionaryTest, GetDictionary) {
 TEST_F(LuaParameterDictionaryTest, GetKeys) {
   auto dict = MakeDictionary("return { blah = 100, blah1 = 200}");
 
-  std::vector<string> keys = dict->GetKeys();
+  std::vector<std::string> keys = dict->GetKeys();
   ASSERT_EQ(keys.size(), 2);
   std::sort(keys.begin(), keys.end());
   ASSERT_EQ(keys[0], "blah");
@@ -130,7 +122,7 @@ TEST_F(LuaParameterDictionaryTest, ToString) {
   alpha1 = false,
   })");
 
-  const string golden = R"({
+  const std::string golden = R"({
   alpha = true,
   alpha1 = false,
   blub = "hello",
@@ -172,7 +164,7 @@ TEST_F(LuaParameterDictionaryTest, ToStringForArrays) {
       foo = "ups",
   })");
 
-  const string golden = R"({
+  const std::string golden = R"({
   "blub",
   3.000000,
   3.100000,
@@ -184,7 +176,7 @@ TEST_F(LuaParameterDictionaryTest, ToStringForArrays) {
 TEST_F(LuaParameterDictionaryTest, GetArrayValuesAsStrings) {
   auto dict = MakeDictionary("return { 'a', 'b', 'c' }");
   EXPECT_EQ(0, dict->GetKeys().size());
-  const std::vector<string> values = dict->GetArrayValuesAsStrings();
+  const std::vector<std::string> values = dict->GetArrayValuesAsStrings();
   EXPECT_EQ(3, values.size());
   EXPECT_EQ("a", values[0]);
   EXPECT_EQ("b", values[1]);
@@ -224,20 +216,6 @@ TEST_F(LuaParameterDictionaryTest, TestChoseFalse) {
 TEST_F(LuaParameterDictionaryTest, TestChooseInvalidArgument) {
   EXPECT_DEATH(MakeDictionary("return { a = choose('truish', 1, 0) }"),
                "condition is not a boolean value.");
-}
-
-TEST_F(LuaParameterDictionaryTest, Partial) {
-  auto partial_dictionary =
-      MakePartial("return { blah = { blue = { red = 200 } } }", "blah.blue");
-  EXPECT_EQ(200, partial_dictionary->GetInt("red"));
-}
-
-TEST_F(LuaParameterDictionaryTest, PartialIsReferenceCounted) {
-  auto partial_dictionary =
-      MakePartial("return { blah = { blue = { red = 200 } } }", "blah.blue");
-  ASSERT_DEATH(partial_dictionary.reset(),
-               ".*Key 'red' was used the wrong number of times..*");
-  partial_dictionary->GetInt("red");
 }
 
 }  // namespace

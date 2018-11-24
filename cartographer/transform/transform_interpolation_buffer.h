@@ -17,12 +17,12 @@
 #ifndef CARTOGRAPHER_TRANSFORM_TRANSFORM_INTERPOLATION_BUFFER_H_
 #define CARTOGRAPHER_TRANSFORM_TRANSFORM_INTERPOLATION_BUFFER_H_
 
-#include <deque>
-#include <memory>
+#include <vector>
 
 #include "cartographer/common/time.h"
-#include "cartographer/proto/trajectory.pb.h"
+#include "cartographer/mapping/proto/trajectory.pb.h"
 #include "cartographer/transform/rigid_transform.h"
+#include "cartographer/transform/timestamped_transform.h"
 
 namespace cartographer {
 namespace transform {
@@ -30,8 +30,9 @@ namespace transform {
 // A time-ordered buffer of transforms that supports interpolated lookups.
 class TransformInterpolationBuffer {
  public:
-  static std::unique_ptr<TransformInterpolationBuffer> FromTrajectory(
-      const cartographer::proto::Trajectory& trajectory);
+  TransformInterpolationBuffer() = default;
+  explicit TransformInterpolationBuffer(
+      const mapping::proto::Trajectory& trajectory);
 
   // Adds a new transform to the buffer and removes the oldest transform if the
   // buffer size limit is exceeded.
@@ -56,12 +57,7 @@ class TransformInterpolationBuffer {
   bool empty() const;
 
  private:
-  struct TimestampedTransform {
-    common::Time time;
-    transform::Rigid3d transform;
-  };
-
-  std::deque<TimestampedTransform> deque_;
+  std::vector<TimestampedTransform> timestamped_transforms_;
 };
 
 }  // namespace transform

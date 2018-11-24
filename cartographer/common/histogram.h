@@ -17,7 +17,6 @@
 #ifndef CARTOGRAPHER_COMMON_HISTOGRAM_H_
 #define CARTOGRAPHER_COMMON_HISTOGRAM_H_
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -26,19 +25,10 @@
 namespace cartographer {
 namespace common {
 
-class BucketHistogram {
- public:
-  void Hit(const string& bucket);
-  string ToString() const;
-
- private:
-  std::map<string, int64> buckets_;
-};
-
 class Histogram {
  public:
   void Add(float value);
-  string ToString(int buckets) const;
+  std::string ToString(int buckets) const;
 
  private:
   std::vector<float> values_;
